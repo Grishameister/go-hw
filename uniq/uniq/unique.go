@@ -1,16 +1,15 @@
 package uniq
 
 import (
-	"errors"
 	"strconv"
 	"strings"
 )
 
 type Options struct {
-	flags      rune
-	field      int
-	offset     int
-	withoutReg bool
+	Flags      rune
+	Field      int
+	Offset     int
+	WithoutReg bool
 }
 
 type IOpt struct {
@@ -18,7 +17,7 @@ type IOpt struct {
 	Output string
 }
 
-func GenerateCallBack(eq int, value int) func(int) bool {
+func GenerateCallBack(eq int8, value int) func(int) bool {
 	if eq == 1 {
 		return func(v int) bool {
 			return v == value
@@ -32,65 +31,6 @@ func GenerateCallBack(eq int, value int) func(int) bool {
 			return true
 		}
 	}
-}
-
-func FillOptions(args *[]string) (Options, IOpt, error) {
-	if args == nil {
-		return Options{}, IOpt{}, errors.New("Invalid pointer")
-	}
-	err := errors.New("usage")
-	options := Options{}
-	io := IOpt{}
-
-	for i := 1; i < len(*args); i++ {
-		arg := (*args)[i]
-		switch arg {
-		case "-c":
-			if options.flags != 0 {
-				return Options{}, IOpt{}, err
-			}
-			options.flags = 'c'
-		case "-u":
-			if options.flags != 0 {
-				return Options{}, IOpt{}, err
-			}
-			options.flags = 'u'
-		case "-d":
-			if options.flags != 0 {
-				return Options{}, IOpt{}, err
-			}
-			options.flags = 'd'
-		case "-f":
-			i++
-			if i >= len(*args) {
-				return Options{}, IOpt{}, err
-			}
-			field, err := strconv.Atoi((*args)[i])
-			if err != nil {
-				return Options{}, IOpt{}, err
-			}
-			options.field = field
-		case "-s":
-			i++
-			if i >= len(*args) {
-				return Options{}, IOpt{}, err
-			}
-			offset, err := strconv.Atoi((*args)[i])
-			if err != nil {
-				return Options{}, IOpt{}, err
-			}
-			options.offset = offset
-		case "-i":
-			options.withoutReg = true
-		default:
-			if io.Input == "" {
-				io.Input = (*args)[i]
-			} else {
-				io.Output = (*args)[i]
-			}
-		}
-	}
-	return options, io, nil
 }
 
 func PrepareForCase(str string) string {
@@ -137,21 +77,20 @@ type Value struct {
 }
 
 func getMapImpl(strings []string, options *Options) map[string]*Value {
-	result := make(map[string]*Value, len(strings))
+	result := make(map[string]*Value, 0)
 
 	for i, _ := range strings {
 		s := strings[i]
-		if options.field > 0 {
-			s = PrepareForField(s, options.field)
+		if options.Field > 0 {
+			s = PrepareForField(s, options.Field)
 		}
-		if options.offset > 0 {
-			s = PrepareForOffset(s, options.offset)
+		if options.Offset > 0 {
+			s = PrepareForOffset(s, options.Offset)
 		}
-		if options.withoutReg {
+		if options.WithoutReg {
 			s = PrepareForCase(s)
 		}
-		_, ok := result[s]
-		if ok {
+		if _, ok := result[s]; ok {
 			result[s].count++
 		} else {
 			result[s] = new(Value)
@@ -169,7 +108,7 @@ func GetUniqueOrNot(strings []string, options *Options) []string {
 	var op rune
 	var cb func(int) bool
 
-	switch options.flags {
+	switch options.Flags {
 	case 'u':
 		cb = GenerateCallBack(1, 1)
 	case 'd':
@@ -177,7 +116,7 @@ func GetUniqueOrNot(strings []string, options *Options) []string {
 	default:
 		cb = GenerateCallBack(-1, 1)
 	}
-	op = options.flags
+	op = options.Flags
 
 	for _, v := range mapOfVals {
 		if cb(v.count) {
