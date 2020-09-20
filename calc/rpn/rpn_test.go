@@ -1,55 +1,92 @@
 package rpn
 
-import "testing"
+import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"testing"
+)
 
 func TestIsOptionSuccess(t *testing.T) {
 	input := []string{"+", "-", "/", "*"}
 	for _, v := range input {
-		out := isOption(v)
-		if !out {
-			t.Fatalf("Check failed on : %s", input)
-		}
+		assert.Equal(t, isOptionString(v), true)
 	}
-
 }
 
 func TestIsOptionFail(t *testing.T) {
 	input := "23245"
-	out := isOption(input)
-
-	if out {
-		t.Fatalf("Check failed on : %s", input)
-	}
+	assert.Equal(t, isOptionString(input), false)
 }
 
-func TestIsValidExprSuccess(t *testing.T) {
+func TestIsValidBranchesSuccess(t *testing.T) {
 	input := []rune("(((9+2)*2-3))")
-
-	out := isValidExpr(input)
-
-	if !out {
-		t.Fatal("Check Success failed on isValid")
-	}
-
+	assert.Equal(t, isValidBranches(input), true)
 }
 
-func TestIsValidExprFailLeft(t *testing.T) {
-	input := []rune("((9+2)*2-3))")
+func TestIsValidBranchesFail(t *testing.T) {
+	tests := []struct {
+		input []rune
+		out   bool
+	}{
+		{
+			input: []rune("((9+2)*2-3))"),
+			out:   false,
+		},
+		{
+			input: []rune("((9+2)*2-3"),
+			out:   false,
+		},
+	}
 
-	out := isValidExpr(input)
-
-	if out {
-		t.Fatal("Check Fail failed on isValid")
+	for _, tt := range tests {
+		t.Run(string(tt.input), func(t *testing.T) {
+			out := isValidBranches(tt.input)
+			assert.Equal(t, out, tt.out)
+		})
 	}
 }
 
-func TestIsValidExprFailRight(t *testing.T) {
-	input := []rune("((9+2)*2-3")
+func TestIsValidSymbolsSuccess(t *testing.T) {
+	input := []rune("(9+2)*2-3")
+	assert.Equal(t, isValidSymbols(input), true)
+}
 
-	out := isValidExpr(input)
+func TestIsValidSymbolsFail(t *testing.T) {
+	tests := []struct {
+		input []rune
+		out   bool
+	}{
+		{
+			input: []rune("-9-2*2-3"),
+			out:   false,
+		},
+		{
+			input: []rune("9+2*2-3-"),
+			out:   false,
+		},
+		{
+			input: []rune("9+2-a*2-3-"),
+			out:   false,
+		},
+		{
+			input: []rune("a+2-a*2-3"),
+			out:   false,
+		},
+		{
+			input: []rune("2-a*2-3-a"),
+			out:   false,
+		},
+		{
+			input: []rune{},
+			out:   false,
+		},
+	}
 
-	if out {
-		t.Fatal("Check Fail failed on isValid")
+	for _, tt := range tests {
+		t.Run(string(tt.input), func(t *testing.T) {
+			out := isValidSymbols(tt.input)
+			assert.Equal(t, out, tt.out)
+		})
 	}
 }
 
@@ -60,31 +97,34 @@ func TestRPNSuccess(t *testing.T) {
 		t.Fatal("Invalid expression")
 	}
 	expected := []string{"12", "25", "3", "*", "+", "4", "5", "/", "-", "9", "+"}
-
-	if len(out) != len(expected) {
-		t.Fatal("Lengths mismatch")
-	}
-	for i := 0; i < len(expected); i++ {
-		if out[i] != expected[i] {
-			t.Fatal("strings aren't equal")
-		}
-	}
+	assert.Equal(t, expected, out)
 }
 
-func TestRPNBFail(t *testing.T) {
-	input := []rune("(12+25*3-4/5)+9)")
+func TestRPNFail(t *testing.T) {
+	tests := []struct {
+		input []rune
+		out   []string
+	}{
+		{
+			input: []rune("(12+25*3-4/5)+9)"),
+			out:   []string{},
+		},
+		{
+			input: []rune("(12+25*3-4/5)-+9"),
+			out:   []string{},
+		},
+	}
 
-	_, err := RPN(input)
-	if err == nil {
-		t.Fatal("Invalid expression")
+	for _, tt := range tests {
+		t.Run(string(tt.input), func(t *testing.T) {
+			out, err := RPN(tt.input)
+			require.Error(t, err)
+			assert.Equal(t, out, tt.out)
+		})
 	}
 }
 
 func TestCalculateSuccess(t *testing.T) {
 	input := []string{"12", "25", "3", "*", "+", "4", "5", "/", "-", "9", "+"}
-
-	out := Calculate(input)
-	if out != 95 {
-		t.Fatal("Bad Calculate")
-	}
+	assert.Equal(t, Calculate(input), int32(95))
 }
