@@ -89,19 +89,16 @@ func TestGetUniqueOrNot(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(string(tt.opt.Flags), func(t *testing.T) {
-			out := GetUniqueOrNot(tt.input, &tt.opt)
-			assert.Equal(t, len(out), len(tt.expected))
-			for i := 0; i < len(tt.expected); i++ {
-				in := false
-				for j := 0; j < len(out); j++ {
-					if tt.expected[i] == out[j] {
-						in = true
-					}
-				}
-				if !in {
-					t.Fatal("Mismatch strings")
-				}
+			expectedMap := map[string]bool{}
+			outMap := map[string]bool{}
+
+			for _, v := range GetUniqueOrNot(tt.input, &tt.opt) {
+				outMap[v] = true
 			}
+			for _, v := range tt.expected {
+				expectedMap[v] = true
+			}
+			assert.Equal(t, outMap, expectedMap)
 		})
 	}
 }
