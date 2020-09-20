@@ -29,7 +29,7 @@ func TestIsValidBranchesFail(t *testing.T) {
 		out   bool
 	}{
 		{
-			input: []rune("((9+2)*2-3))"),
+			input: []rune("((9+2)*2-3+4))"),
 			out:   false,
 		},
 		{
