@@ -22,12 +22,12 @@ func open(inout string, def *os.File, flag int) (*os.File, error) {
 }
 
 func FillOpt() (uniq.Options, uniq.IOpt, error) {
-	err := errors.New("usage: uniq [-c | -d | -u] [-i] [-f num] [-s chars] [input_file [output_file]]")
-	cFlag := flag.Bool("c", false, "With Counters")
-	uFlag := flag.Bool("u", false, "Unique")
-	dFlag := flag.Bool("d", false, "Not Unique")
+	err := errors.New("[-c | -d | -u] can handle one of these flags at least")
+	withCount := flag.Bool("c", false, "With Counters")
+	unique := flag.Bool("u", false, "Unique")
+	repeat := flag.Bool("d", false, "Not Unique")
 
-	iFlag := flag.Bool("i", false, "Register")
+	withoutReg := flag.Bool("i", false, "Register")
 
 	var field int
 	var offset int
@@ -38,23 +38,23 @@ func FillOpt() (uniq.Options, uniq.IOpt, error) {
 
 	flag.Parse()
 
-	if *cFlag {
-		opt.Flags = 'c'
+	if *withCount {
+		opt.Flag = 'c'
 	}
-	if *uFlag {
-		if opt.Flags != 0 {
+	if *unique {
+		if opt.Flag != 0 {
 			return uniq.Options{}, uniq.IOpt{}, err
 		}
-		opt.Flags = 'u'
+		opt.Flag = 'u'
 	}
-	if *dFlag {
-		if opt.Flags != 0 {
+	if *repeat {
+		if opt.Flag != 0 {
 			return uniq.Options{}, uniq.IOpt{}, err
 		}
-		opt.Flags = 'd'
+		opt.Flag = 'd'
 	}
 
-	if *iFlag {
+	if *withoutReg {
 		opt.WithoutReg = true
 	}
 
@@ -66,7 +66,7 @@ func FillOpt() (uniq.Options, uniq.IOpt, error) {
 	length := len(flag.Args())
 
 	if length > 2 {
-		return uniq.Options{}, uniq.IOpt{}, err
+		return uniq.Options{}, uniq.IOpt{}, errors.New("too many params in/out files")
 	}
 
 	if length > 0 {
@@ -82,7 +82,6 @@ func FillOpt() (uniq.Options, uniq.IOpt, error) {
 func uniqueWork() error {
 	options, io, err := FillOpt()
 	if err != nil {
-
 		return err
 	}
 
@@ -122,12 +121,10 @@ func uniqueWork() error {
 
 	for _, v := range uniq.GetUniqueOrNot(strings, &options) {
 		if _, err := printer.WriteString(v + "\n"); err != nil {
-			fmt.Println(err)
 			return err
 		}
 	}
 	if err := printer.Flush(); err != nil {
-		fmt.Println(err)
 		return err
 	}
 	return nil

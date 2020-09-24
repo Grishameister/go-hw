@@ -5,11 +5,6 @@ import (
 	"testing"
 )
 
-func TestPrepareForCase(t *testing.T) {
-	input := "AbCd"
-	assert.Equal(t, PrepareForCase(input), "ABCD")
-}
-
 func TestPrepareForOffset(t *testing.T) {
 	input := "AbCd"
 	assert.Equal(t, PrepareForOffset(input, 2), "Cd")
@@ -37,7 +32,7 @@ func TestGetUniqueOrNot(t *testing.T) {
 				"Thanks.",
 			},
 			opt: Options{
-				Flags:      'c',
+				Flag:       'c',
 				Field:      2,
 				Offset:     1,
 				WithoutReg: true,
@@ -56,7 +51,7 @@ func TestGetUniqueOrNot(t *testing.T) {
 				"Thanks.",
 			},
 			opt: Options{
-				Flags:      'd',
+				Flag:       'd',
 				Field:      1,
 				Offset:     1,
 				WithoutReg: true,
@@ -75,7 +70,7 @@ func TestGetUniqueOrNot(t *testing.T) {
 				"Thanks.",
 			},
 			opt: Options{
-				Flags:      'u',
+				Flag:       'u',
 				Field:      2,
 				Offset:     1,
 				WithoutReg: true,
@@ -88,7 +83,7 @@ func TestGetUniqueOrNot(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(string(tt.opt.Flags), func(t *testing.T) {
+		t.Run(string(tt.opt.Flag), func(t *testing.T) {
 			expectedMap := map[string]bool{}
 			outMap := map[string]bool{}
 

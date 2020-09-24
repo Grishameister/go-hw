@@ -6,7 +6,7 @@ import (
 )
 
 type Options struct {
-	Flags      rune
+	Flag       rune
 	Field      int
 	Offset     int
 	WithoutReg bool
@@ -17,20 +17,22 @@ type IOpt struct {
 	Output string
 }
 
-func GenerateCallBack(eq int8, value int) func(int) bool {
-	if eq == 1 {
-		return func(v int) bool {
-			return v == value
-		}
-	} else if eq == 0 {
-		return func(v int) bool {
-			return v != value
-		}
-	} else {
+func GenerateCallBack(eq *bool, value int) func(int) bool {
+	if eq == nil {
 		return func(v int) bool {
 			return true
 		}
 	}
+	if *eq {
+		return func(v int) bool {
+			return v == value
+		}
+	}
+
+	return func(v int) bool {
+		return v != value
+	}
+
 }
 
 func PrepareForCase(str string) string {
@@ -79,8 +81,7 @@ type Value struct {
 func getMapImpl(strings []string, options *Options) map[string]*Value {
 	result := make(map[string]*Value, 0)
 
-	for i, _ := range strings {
-		s := strings[i]
+	for i, s := range strings {
 		if options.Field > 0 {
 			s = PrepareForField(s, options.Field)
 		}
@@ -108,15 +109,18 @@ func GetUniqueOrNot(strings []string, options *Options) []string {
 	var op rune
 	var cb func(int) bool
 
-	switch options.Flags {
+	switch options.Flag {
 	case 'u':
-		cb = GenerateCallBack(1, 1)
+		eq := true
+		cb = GenerateCallBack(&eq, 1)
 	case 'd':
-		cb = GenerateCallBack(0, 1)
+		eq := false
+		cb = GenerateCallBack(&eq, 1)
 	default:
-		cb = GenerateCallBack(-1, 1)
+		var eq *bool
+		cb = GenerateCallBack(eq, 1)
 	}
-	op = options.Flags
+	op = options.Flag
 
 	for _, v := range mapOfVals {
 		if cb(v.count) {

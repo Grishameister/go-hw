@@ -18,37 +18,9 @@ func TestIsOptionFail(t *testing.T) {
 	assert.Equal(t, isOptionString(input), false)
 }
 
-func TestIsValidBranchesSuccess(t *testing.T) {
-	input := []rune("(((9+2)*2-3))")
-	assert.Equal(t, isValidBranches(input), true)
-}
-
-func TestIsValidBranchesFail(t *testing.T) {
-	tests := []struct {
-		input []rune
-		out   bool
-	}{
-		{
-			input: []rune("((9+2)*2-3+4))"),
-			out:   false,
-		},
-		{
-			input: []rune("((9+2)*2-3"),
-			out:   false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(string(tt.input), func(t *testing.T) {
-			out := isValidBranches(tt.input)
-			assert.Equal(t, out, tt.out)
-		})
-	}
-}
-
 func TestIsValidSymbolsSuccess(t *testing.T) {
-	input := []rune("(9+2)*2-3")
-	assert.Equal(t, isValidSymbols(input), true)
+	input := []rune("(((9.2+2)*2-3))")
+	assert.Equal(t, isValidExpr(input), true)
 }
 
 func TestIsValidSymbolsFail(t *testing.T) {
@@ -57,7 +29,7 @@ func TestIsValidSymbolsFail(t *testing.T) {
 		out   bool
 	}{
 		{
-			input: []rune("-9-2*2-3"),
+			input: []rune("1++1"),
 			out:   false,
 		},
 		{
@@ -80,11 +52,23 @@ func TestIsValidSymbolsFail(t *testing.T) {
 			input: []rune{},
 			out:   false,
 		},
+		{
+			input: []rune("((9+2)*2-3+4))"),
+			out:   false,
+		},
+		{
+			input: []rune("((9+2)*2-3"),
+			out:   false,
+		},
+		{
+			input: []rune(")(9+2)*2-3"),
+			out:   false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(string(tt.input), func(t *testing.T) {
-			out := isValidSymbols(tt.input)
+			out := isValidExpr(tt.input)
 			assert.Equal(t, out, tt.out)
 		})
 	}
@@ -126,5 +110,14 @@ func TestRPNFail(t *testing.T) {
 
 func TestCalculateSuccess(t *testing.T) {
 	input := []string{"12", "25", "3", "*", "+", "4", "5", "/", "-", "9", "+"}
-	assert.Equal(t, Calculate(input), int32(95))
+	out, err := Calculate(input)
+	assert.Equal(t, out, 94.75)
+	require.NoError(t, err)
+}
+
+func TestCalculateFail(t *testing.T) {
+	input := []string{"12", "25.2.2", "3", "*", "+", "4", "5", "/", "-", "9", "+"}
+	out, err := Calculate(input)
+	assert.Equal(t, out, float64(0))
+	require.Error(t, err)
 }

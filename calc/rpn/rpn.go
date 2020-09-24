@@ -27,18 +27,47 @@ func isOptionRune(sym rune) bool {
 	return sym == '+' || sym == '-' || sym == '/' || sym == '*'
 }
 
-func isValidBranches(expr []rune) bool {
-	branches := stack.Stack{}
+func isPoint(sym rune) bool {
+	return sym == '.'
+}
 
-	for _, v := range expr {
-		if v == '(' {
-			branches.Push(v)
+func isValidExpr(expr []rune) bool {
+	branches := stack.Stack{}
+	if len(expr) == 0 {
+		return false
+	}
+	if isOptionRune(expr[0]) || isOptionRune(expr[len(expr)-1]) || isPoint(expr[0]) || isPoint(expr[len(expr)-1]) {
+		return false
+	}
+
+	if !isOptionRune(expr[0]) && expr[0] == ')' && !unicode.IsDigit(expr[0]) {
+		return false
+	}
+
+	if isBranch(expr[0]) {
+		branches.Push(expr[0])
+	}
+
+	prev := expr[0]
+	for i := 1; i < len(expr); i++ {
+		if !isOptionRune(expr[i]) && !isBranch(expr[i]) && !unicode.IsDigit(expr[i]) && !isPoint(expr[i]) {
+			return false
 		}
-		if v == ')' {
-			if branches.Len() == 0 {
-				return false
+		if (isOptionRune(prev) || isPoint(prev)) && (isOptionRune(expr[i]) || isPoint(expr[i])) {
+			return false
+		}
+		if !isBranch(expr[i]) {
+			prev = expr[i]
+		} else {
+			if expr[i] == '(' {
+				branches.Push(expr[i])
 			}
-			branches.Pop()
+			if expr[i] == ')' {
+				if branches.Len() == 0 {
+					return false
+				}
+				branches.Pop()
+			}
 		}
 	}
 	if branches.Len() != 0 {
@@ -47,47 +76,18 @@ func isValidBranches(expr []rune) bool {
 	return true
 }
 
-func isValidSymbols(expr []rune) bool {
-	if len(expr) == 0 {
-		return false
-	}
-	if isOptionRune(expr[0]) || isOptionRune(expr[len(expr)-1]) {
-		return false
-	}
-
-	if !isOptionRune(expr[0]) && !isBranch(expr[0]) && !unicode.IsDigit(expr[0]) {
-		return false
-	}
-
-	prev := expr[0]
-	for i := 1; i < len(expr); i++ {
-		if !isOptionRune(expr[i]) && !isBranch(expr[i]) && !unicode.IsDigit(expr[i]) {
-			return false
-		}
-		if isOptionRune(prev) && isOptionRune(expr[i]) {
-			return false
-		}
-		if !isBranch(expr[i]) {
-			prev = expr[i]
-		}
-	}
-	return true
-}
-
 func RPN(expr []rune) ([]string, error) {
 	invalidExpr := errors.New("Invalid")
-	if !isValidBranches(expr) {
-		return make([]string, 0), invalidExpr
-	}
-	if !isValidSymbols(expr) {
+	if !isValidExpr(expr) {
 		return make([]string, 0), invalidExpr
 	}
 	var isNumber bool
 	operations := stack.Stack{}
 	rpn := make([]string, 0)
 	number := make([]rune, 0)
+	var empty []rune
 	for _, v := range expr {
-		if unicode.IsDigit(v) {
+		if unicode.IsDigit(v) || isPoint(v) {
 			if !isNumber {
 				isNumber = true
 			}
@@ -95,34 +95,35 @@ func RPN(expr []rune) ([]string, error) {
 		} else {
 			if isNumber {
 				rpn = append(rpn, string(number))
-				number = number[:0]
+				number = empty
 			}
 			isNumber = false
-		}
-		if priority, err := ops[v]; err {
-			for operations.Len() != 0 && v != '(' {
-				op := operations.Peek().(rune)
-				p := ops[op]
-				if p >= priority {
-					rpn = append(rpn, string(op))
-					operations.Pop()
-				} else {
+
+			if priority, err := ops[v]; err {
+				for operations.Len() != 0 && v != '(' {
+					op := operations.Peek().(rune)
+					p := ops[op]
+					if p >= priority {
+						rpn = append(rpn, string(op))
+						operations.Pop()
+					} else {
+						operations.Push(v)
+						break
+					}
+				}
+				if operations.Len() == 0 || v == '(' {
 					operations.Push(v)
-					break
 				}
 			}
-			if operations.Len() == 0 || v == '(' {
-				operations.Push(v)
-			}
-		}
-		if v == ')' {
-			op := operations.Peek().(rune)
-			for op != '(' {
-				rpn = append(rpn, string(op))
+			if v == ')' {
+				op := operations.Peek().(rune)
+				for op != '(' {
+					rpn = append(rpn, string(op))
+					operations.Pop()
+					op = operations.Peek().(rune)
+				}
 				operations.Pop()
-				op = operations.Peek().(rune)
 			}
-			operations.Pop()
 		}
 	}
 	if isNumber {
@@ -135,15 +136,15 @@ func RPN(expr []rune) ([]string, error) {
 	return rpn, nil
 }
 
-func Calculate(expr []string) int32 {
+func Calculate(expr []string) (float64, error) {
 	s := stack.Stack{}
 	for _, v := range expr {
 		if isOptionString(v) {
-			op1 := s.Peek().(int32)
+			op1 := s.Peek().(float64)
 			s.Pop()
-			op2 := s.Peek().(int32)
+			op2 := s.Peek().(float64)
 			s.Pop()
-			var result int32
+			var result float64
 			switch v {
 			case "+":
 				result = op1 + op2
@@ -156,9 +157,12 @@ func Calculate(expr []string) int32 {
 			}
 			s.Push(result)
 		} else {
-			value, _ := strconv.Atoi(v)
-			s.Push(rune(value))
+			value, err := strconv.ParseFloat(v, 64)
+			if err != nil {
+				return 0, err
+			}
+			s.Push(value)
 		}
 	}
-	return s.Peek().(int32)
+	return s.Peek().(float64), nil
 }

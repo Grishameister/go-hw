@@ -14,9 +14,14 @@ func main() {
 		expression = scanner.Text()
 	}
 	slice := []rune(expression)
-	length, err := rpn.RPN(slice)
+	expr, err := rpn.RPN(slice)
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
-	fmt.Println(rpn.Calculate(length))
+	if value, err := rpn.Calculate(expr); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(value)
+	}
 }
